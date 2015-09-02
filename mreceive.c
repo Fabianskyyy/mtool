@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
     
     printf("Now receiving from multicast group: %s\n", TEST_ADDR);
     
-    time_t exitTime = time(0) + 2;
+    time_t exitTime = time(0) + 5;
     
     for (i = 0;time(0) <= exitTime; i++) {
         socklen_t addr_size = sizeof(struct sockaddr_in);
@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
         iCounter++;
     }
     
-    printf("\nfertig\n");
+    printf("\nStopping receive traffic from Source . . .\n");
     return 0;
 }
 
