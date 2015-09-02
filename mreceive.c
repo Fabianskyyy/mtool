@@ -36,7 +36,7 @@
 #define SOCKET_ERROR -1
 #endif
 #define BUFSIZE   1024
-#define TTL_VALUE 2
+#define TTL_VALUE 3
 #define LOOPMAX   20
 #define MAXIP     16
 
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 		socklen_t addr_size = sizeof(struct sockaddr_in);
 		static int iCounter = 1;
 
-		/* receive from the multicast address */
+		/* receive from the multicast address *///////////////////////////
 
 		iRet = recvfrom(s, achIn, BUFSIZE, 0, (struct sockaddr *)&stFrom, &addr_size);
 		if (iRet < 0) {
