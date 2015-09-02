@@ -29,8 +29,6 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <sys/time.h>
-#include <time.h>
-#include <fcntl.h>
 
 #define TRUE 1
 #define FALSE 0
