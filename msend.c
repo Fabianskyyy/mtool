@@ -42,11 +42,13 @@
 #define BUFSIZE   1024
 
 char *TEST_ADDR = "224.1.1.1";
+unsigned char achIN[BUFSIZE]
 int TEST_PORT = 4444;
 int TTL_VALUE = 1;
 int SLEEP_TIME = 1000;
 unsigned long IP = INADDR_ANY;
 int NUM = 0;
+time_t exitTime = time(0) + 5;
 
 int join_flag = 0;		/* not join */
 
@@ -87,7 +89,7 @@ Usage:  msend [-g GROUP] [-p PORT] [-join] [-i ADDRESS] [-t TTL] [-P PERIOD]\n\
 
 int main(int argc, char *argv[])
 {
-	struct sockaddr_in stLocal, stTo;
+	struct sockaddr_in stLocal, stTo, stFrom;
 	char achOut[BUFSIZE] = "";
 	int s, i;
 	struct ip_mreq stMreq;
@@ -246,6 +248,16 @@ int main(int argc, char *argv[])
 
 		/* now wait for the alarms */
 		sigemptyset(&sigset);
+        
+        ////////////////////////////////////////////////////////////////////
+        iRet = recvfrom(s, achIn, BUFSIZE, 0, (struct sockaddr *)&stFrom, &addr_size);
+        if (iRet < 0) {
+            printf("recvfrom() failed.\n");
+            exit(1);
+        }
+        ////////////////////////////////////////////////////////////////////
+        
+        
 		for (;;) {
 			sigsuspend(&sigset);
 		}
@@ -269,7 +281,7 @@ int main(int argc, char *argv[])
 				printf("sendto() failed.\n");
 				exit(1);
 			}
-		}		/* end for(;;) */
+		}
 	}
 
 	return 0;
@@ -284,8 +296,13 @@ void timerhandler(void)
 		handler_par.achOut = (char *)(&iCounter);
 		handler_par.len = sizeof(iCounter);
 		printf("Sending msg %d, TTL %d, to %s:%d\n", iCounter, TTL_VALUE, TEST_ADDR, TEST_PORT);
+        
+        printf("Receive msg %d from %s:%d: %s\n",
+               iCounter, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port), achIn);
+        
 	} else {
 		printf("Sending msg %d, TTL %d, to %s:%d: %s\n", iCounter, TTL_VALUE, TEST_ADDR, TEST_PORT, handler_par.achOut);
+        
 	}
 	iRet = sendto(handler_par.s, handler_par.achOut, handler_par.len, handler_par.n, handler_par.stTo, handler_par.addr_size);
 	if (iRet < 0) {
