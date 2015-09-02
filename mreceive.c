@@ -37,9 +37,9 @@
 #include <time.h>
 #include <fcntl.h>
 
-#ifndef VERSION
-#define VERSION "Unknown"
-#endif
+//#ifndef VERSION
+//#define VERSION "Unknown"
+//#endif
 
 #define TRUE 1
 #define FALSE 0
