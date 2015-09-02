@@ -29,6 +29,8 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <time.h>
+#include <fcntl.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -42,7 +44,7 @@
 #define BUFSIZE   1024
 
 char *TEST_ADDR = "224.1.1.1";
-unsigned char achIN[BUFSIZE]
+unsigned char achIn[BUFSIZE];
 int TEST_PORT = 4444;
 int TTL_VALUE = 1;
 int SLEEP_TIME = 1000;
