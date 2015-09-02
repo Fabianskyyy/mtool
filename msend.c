@@ -203,7 +203,13 @@ int main(int argc, char *argv[])
 		printf("setsockopt() IP_MULTICAST_TTL failed.\n");
 		exit(1);
 	}
-
+	
+	 /* nonblocking socket */
+    	int flags = fcntl(s, F_GETFL, 0);
+	 if (flags < 0) {
+        printf("fcntl() nonblocking flag failed.\n");
+        exit(1);
+	 }
 	/* enable loopback */
 	iTmp = TRUE;
 	iRet = setsockopt(s, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&iTmp, sizeof(iTmp));
