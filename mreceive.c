@@ -264,9 +264,11 @@ int main(int argc, char *argv[])
             
             
             //system("echo 'Text' | nc 'ip' 'port' 'UDP'");
-            sprintf(command, "echo '%s' | nc %s %d", achIn, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port));
+            sprintf(command, "echo '%s' | nc -l %s -p %d", achIn, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port));
             system(command);
             
+            // -l & -p -> depends on version of netcat
+            //after executing system(), process stops working
             // (UNKNOWN) [192.168.10.2] 5555 (?) : Connection Refused
             // Mit SOCK_DGRAM --> invalid Port (viereck mit 4 bits)
         }
