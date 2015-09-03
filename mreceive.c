@@ -1,40 +1,13 @@
-//
-//  main.m
-//  Multicast_Applikation
-//
-//  Created by Fabian Riegsinger on 01.09.15.
-//  Copyright (c) 2015 Fabian Riegsinger. All rights reserved.
-//
-
-/*
- * mreceive.c  -- Prints UDP messages received from a multicast group.
- *
- * (c)  Jianping Wang, Yvan Pointurier, Jorg Liebeherr, 2002
- *      Multimedia Networks Group, University of Virginia
- *
- * SOURCE CODE RELEASED TO THE PUBLIC DOMAIN
- *
- * version 2.0 - 5/20/2002
- * version 2.1 - 12/4/2002
- *	Update version display.
- * version 2.2 - 05/17/2003
- *      Assign default values to parameters . The usage information is
- *      changed according to README_mreceive.txt
- *
- * Based on this public domain program:
- * u_mctest.c            (c) Bob Quinn           2/4/97
- *
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+//#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
-#include <time.h>
+//#include <time.h>
 #include <fcntl.h>
 
 //#ifndef VERSION
@@ -46,11 +19,14 @@
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
 #endif
+#ifndef VERSION
+#define VERSION "unknown"
+#endif
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR -1
 #endif
 #define BUFSIZE   1024
-#define TTL_VALUE 2
+#define TTL_VALUE 3
 #define LOOPMAX   20
 #define MAXIP     16
 
@@ -59,6 +35,18 @@ int TEST_PORT = 4444;
 unsigned long IP[MAXIP];
 int NUM = 0;
 char command[1128];
+int SLEEP_TIME = 1000;
+static int iCounter = 1;
+
+typedef struct timerhandler_s {
+    int s;
+    char *achOut;
+    int len;
+    int n;
+    struct sockaddr *stTo;
+    int addr_size;
+} timerhandler_t;
+timerhandler_t handler_par;
 
 void printHelp(void)
 {
@@ -79,8 +67,11 @@ void printHelp(void)
 
 int main(int argc, char *argv[])
 {
-    struct sockaddr_in stLocal, stFrom;
+    struct sockaddr_in stLocal, stFrom, stTo;
     unsigned char achIn[BUFSIZE];
+    //unsigned char achIIn[BUFSIZE] = "TESTTEXT";
+    char achOut[BUFSIZE] = "";
+    int addr_size = sizeof(struct sockaddr_in);
     int s, i;
     struct ip_mreq stMreq;
     int iTmp, iRet;
@@ -216,12 +207,12 @@ int main(int argc, char *argv[])
     
     printf("Now receiving from multicast group: %s\n", TEST_ADDR);
     
-    time_t exitTime = time(0) + 5;
+    //time_t exitTime = time(0) + 2;
     
-    for (i = 0;time(0) <= exitTime; i++) {
+    for (int j = 0; j <= 10; j++) { // time(0) <= exitTime
         socklen_t addr_size = sizeof(struct sockaddr_in);
         static int iCounter = 1;
-        
+        printf("\n %i \n",j);
         /* receive from the multicast address */
         
         iRet = recvfrom(s, achIn, BUFSIZE, 0, (struct sockaddr *)&stFrom, &addr_size);
@@ -234,16 +225,17 @@ int main(int argc, char *argv[])
         if (NUM) {
             gettimeofday(&tv, NULL);
             
-            if (i == 0)
+           /* if (i == 0)
                 starttime = tv.tv_sec * 1000000 + tv.tv_usec;
-            curtime = tv.tv_sec * 1000000 + tv.tv_usec - starttime;
+            else if
+                curtime = tv.tv_sec * 1000000 + tv.tv_usec - starttime
             numreceived =
             (unsigned int)achIn[0] + ((unsigned int)(achIn[1]) << 8) + ((unsigned int)(achIn[2]) << 16) +
             ((unsigned int)(achIn[3]) >> 24);
             fprintf(stdout, "%5d\t%s:%5d\t%d.%03d\t%5d\n", iCounter, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port),
                     curtime / 1000000, (curtime % 1000000) / 1000, numreceived);
             fflush(stdout);
-            rcvCountNew = numreceived;
+            rcvCountNew = numreceived;*/
             if (rcvCountNew > rcvCountOld + 1) {
                 if (rcvCountOld + 1 == rcvCountNew - 1)
                     printf("****************\nMessage not received: %d\n****************\n", rcvCountOld + 1);
@@ -262,10 +254,9 @@ int main(int argc, char *argv[])
             printf("Receive msg %d from %s:%d: %s\n",
                    iCounter, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port), achIn);
             
-            
             //system("echo 'Text' | nc 'ip' 'port' 'UDP'");
-            sprintf(command, "echo '%s' | nc -l %s -p %d", achIn, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port));
-            system(command);
+            //sprintf(command, "echo '%s' | nc -l %s -p %d", achIn, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port));
+            //system(command);
             
             // -l & -p -> depends on version of netcat
             //after executing system(), process stops working
@@ -275,14 +266,36 @@ int main(int argc, char *argv[])
         iCounter++;
     }
     
-    printf("\nStopping receive traffic from Source . . .\n");
+    printf("\nStopping receive traffic from Source . . .");
+    
+    // Assign our destination address
+    stTo.sin_family = AF_INET;
+    stTo.sin_addr.s_addr = inet_addr(TEST_ADDR);
+    stTo.sin_port = htons(TEST_PORT);
+    
+    
+    printf("\nStart sending from new Source . . .\n\n\n");
+    
+    for(int j=0 ; j <= 10 ; j++){
+    handler_par.s = s;
+    handler_par.achOut = achIn;
+    handler_par.len = strlen(achIn) + 1;
+    handler_par.n = 0;
+    handler_par.stTo = (struct sockaddr *)&stTo;
+    handler_par.addr_size = addr_size;
+    
+    if (NUM) {
+        handler_par.achOut = (char *)(&iCounter);
+        handler_par.len = sizeof(iCounter);
+        printf("Sending msg %d, TTL %d, to %s:%d\n", j, TTL_VALUE, TEST_ADDR, TEST_PORT);
+    } else {
+        printf("Sending msg %d, TTL %d, to %s:%d: %s\n", j, TTL_VALUE, TEST_ADDR, TEST_PORT, handler_par.achOut);
+    }
+    iRet = sendto(handler_par.s, handler_par.achOut, handler_par.len, handler_par.n, handler_par.stTo, handler_par.addr_size);
+    if (iRet < 0) {
+        printf("sendto() failed.\n");
+        exit(1);
+      }
+    }
     return 0;
 }
-
-/**
- * Local Variables:
- *  version-control: t
- *  indent-tabs-mode: t
- *  c-file-style: "linux"
- * End:
- */
