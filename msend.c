@@ -8,6 +8,8 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <time.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -17,20 +19,16 @@
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR -1
 #endif
-#ifndef VERSION
-#define VERSION "unknwon"
-#endif
 #define LOOPMAX   20
 #define BUFSIZE   1024
 
 //Global Variables
-char *TEST_ADDR = "224.1.1.1";
+char *TEST_ADDR = "225.3.2.1";
 int TEST_PORT = 4444;
-int TTL_VALUE = 1;
+int TTL_VALUE = 3;
 int SLEEP_TIME = 1000;
 unsigned long IP = INADDR_ANY;
-int NUM = 0;
-unsigned char achIn[BUFSIZE];
+int NUM = 0, j;
 
 int join_flag = 0;		// not join
 
@@ -38,6 +36,7 @@ int join_flag = 0;		// not join
 typedef struct timerhandler_s {
     int s;
     char *achOut;
+    char *achIn;
     int len;
     int n;
     struct sockaddr *stTo;
@@ -74,6 +73,7 @@ int main(int argc, char *argv[])
 {
     struct sockaddr_in stLocal, stTo, stFrom;
     char achOut[BUFSIZE] = "";
+    unsigned char achIn[BUFSIZE];
     int s,i;
     struct ip_mreq stMreq;
     int iTmp, iRet;
@@ -163,14 +163,23 @@ int main(int argc, char *argv[])
     
     // name the socket
     stLocal.sin_family = AF_INET;
-    stLocal.sin_addr.s_addr = IP;
+    stLocal.sin_addr.s_addr = htonl(INADDR_ANY); //IP
     stLocal.sin_port = htons(TEST_PORT);
     iRet = bind(s, (struct sockaddr *)&stLocal, sizeof(stLocal));
     if (iRet == SOCKET_ERROR) {
         printf("bind() failed.\n");
         exit(1);
     }
-    
+
+    //Non-blocking socket
+	int flags = fcntl(s, F_GETFL, 0);
+	if(flags < 0){
+		printf("\nfcntl() non-blocking flag failed !\n");
+		exit(1);
+	}
+	flags = (flags | O_NONBLOCK);
+	fcntl(s, F_SETFL, flags);
+
     // join the multicast group.
     stMreq.imr_multiaddr.s_addr = inet_addr(TEST_ADDR);
     stMreq.imr_interface.s_addr = IP;
@@ -211,6 +220,7 @@ int main(int argc, char *argv[])
     
         handler_par.s = s;
         handler_par.achOut = achOut;
+	handler_par.achIn = achIn;
         handler_par.len = strlen(achOut) + 1;
         handler_par.n = 0;
         handler_par.stTo = (struct sockaddr *)&stTo;
@@ -228,7 +238,7 @@ int main(int argc, char *argv[])
                 achOut[0] = (unsigned char)(i);
                 printf("Send out msg %d to %s:%d\n", i+1, TEST_ADDR, TEST_PORT);
             } else {
-                printf("Send out msg %d to %s:%d: %s\n", i+1, TEST_ADDR, TEST_PORT, achOut);
+                printf("Send out msg %d with TTL=%i to %s:%d: %s\n", i+1,TTL_VALUE, TEST_ADDR, TEST_PORT, achOut);
             }
             
             iRet = sendto(s, achOut, (NUM ? 4 : strlen(achOut) + 1), 0, (struct sockaddr *)&stTo, addr_size);
@@ -236,19 +246,15 @@ int main(int argc, char *argv[])
                 printf("sendto() failed.\n");
                 exit(1);
             }
-            sleep(0.5);
+            sleep(1);
         }
     //////// end for() /////////
 
     printf("Now receiving from multicast group: %s\n", TEST_ADDR);
     
-    //time_t exitTime = time(0) + 2;
-    
-    for (int j = 0; j < 10; j++) { // time(0) <= exitTime
+    time_t exitTime = time(0) + 10;
+    for (j = 0; time(0) <= exitTime; j++) { // time(0) <= exitTime
         socklen_t addr_size = sizeof(struct sockaddr_in);
-        static int iCounter = 1;
-        printf("\n %i \n",j+1);
-        /* receive from the multicast address */
 
         iRet = recvfrom(s, achIn, BUFSIZE, 0, (struct sockaddr *)&stFrom, &addr_size);
         
@@ -257,7 +263,7 @@ int main(int argc, char *argv[])
             printf("recvfrom() failed.\n");
             exit(1);
         }
-        printf("\nasdasdasdads\n");
+        
         if (NUM) {
             gettimeofday(&tv, NULL);
             
@@ -278,10 +284,10 @@ int main(int argc, char *argv[])
             rcvCountOld = rcvCountNew;
         } else {
             printf("Receive msg %d from %s:%d: %s\n",
-                   iCounter, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port), achIn);
+                   j+1, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port), achIn);
             
         }
-        iCounter++;
+	sleep(1);
     }
     
     return 0;
