@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -16,33 +17,34 @@
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR -1
 #endif
+#ifndef VERSION
+#define VERSION "unknwon"
+#endif
 #define LOOPMAX   20
 #define BUFSIZE   1024
-#ifndef VERSION
-#define VERSION "unknown"
-#endif
 
+//Global Variables
 char *TEST_ADDR = "224.1.1.1";
 int TEST_PORT = 4444;
 int TTL_VALUE = 1;
 int SLEEP_TIME = 1000;
 unsigned long IP = INADDR_ANY;
 int NUM = 0;
+unsigned char achIn[BUFSIZE];
 
-int join_flag = 0;		/* not join */
+int join_flag = 0;		// not join
 
+//Strukturen
 typedef struct timerhandler_s {
     int s;
     char *achOut;
-    unsigned char achIn[BUFSIZE];
     int len;
     int n;
     struct sockaddr *stTo;
-    struct sockaddr *stFrom;
     int addr_size;
 } timerhandler_t;
 timerhandler_t handler_par;
-void timerhandler();
+//void timerhandler();
 
 void printHelp(void)
 {
@@ -72,14 +74,17 @@ int main(int argc, char *argv[])
 {
     struct sockaddr_in stLocal, stTo, stFrom;
     char achOut[BUFSIZE] = "";
-    int s, i;
+    int s,i;
     struct ip_mreq stMreq;
     int iTmp, iRet;
     int ii = 1;
     int addr_size = sizeof(struct sockaddr_in);
-    struct itimerval times;
-    sigset_t sigset;
-    struct sigaction act;
+    int rcvCountOld = 0;
+    int rcvCountNew = 1;
+    struct timeval tv;
+    //struct itimerval times;
+    //sigset_t sigset;
+    //struct sigaction act;
     
     if ((argc == 2) && (strcmp(argv[ii], "-v") == 0)) {
         printf("msend version 2.2\n");
@@ -141,14 +146,14 @@ int main(int argc, char *argv[])
         }
     }
     
-    /* get a datagram socket */
+    // get a datagram socket
     s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s == INVALID_SOCKET) {
         printf("socket() failed.\n");
         exit(1);
     }
     
-    /* avoid EADDRINUSE error on bind() */
+    // avoid EADDRINUSE error on bind()
     iTmp = TRUE;
     iRet = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&iTmp, sizeof(iTmp));
     if (iRet == SOCKET_ERROR) {
@@ -156,7 +161,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    /* name the socket */
+    // name the socket
     stLocal.sin_family = AF_INET;
     stLocal.sin_addr.s_addr = IP;
     stLocal.sin_port = htons(TEST_PORT);
@@ -166,7 +171,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    /* join the multicast group. */
+    // join the multicast group.
     stMreq.imr_multiaddr.s_addr = inet_addr(TEST_ADDR);
     stMreq.imr_interface.s_addr = IP;
     if (join_flag == 1) {
@@ -177,7 +182,7 @@ int main(int argc, char *argv[])
         }
     }
     
-    /* set TTL to traverse up to multiple routers */
+    //set TTL to traverse up to multiple routers
     iTmp = TTL_VALUE;
     iRet = setsockopt(s, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&iTmp, sizeof(iTmp));
     if (iRet == SOCKET_ERROR) {
@@ -185,7 +190,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    /* enable loopback */
+    //enable loopback
     iTmp = TRUE;
     iRet = setsockopt(s, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&iTmp, sizeof(iTmp));
     if (iRet == SOCKET_ERROR) {
@@ -193,56 +198,27 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    
-    stFrom.sin_family = AF_INET;
-    stFrom.sin_addr.s_addr = inet_addr(TEST_ADDR);
-    stFrom.sin_port = htons(TEST_PORT);
-    
-    /* assign our destination address */
+    // assign our destination address
     stTo.sin_family = AF_INET;
     stTo.sin_addr.s_addr = inet_addr(TEST_ADDR);
     stTo.sin_port = htons(TEST_PORT);
     printf("Now sending to multicast group: %s\n", TEST_ADDR);
     
+        // convert to milliseconds
+        // block SIGALRM
+        //set up handler for SIGALRM
+        //set up interval timer
     
-    
-    SLEEP_TIME *= 1000;	/* convert to microsecond */
-    if (SLEEP_TIME > 0) {
-        /* block SIGALRM */
-        sigemptyset(&sigset);
-        sigaddset(&sigset, SIGALRM);
-        sigprocmask(SIG_BLOCK, &sigset, NULL);
-        
-        /* set up handler for SIGALRM */
-        act.sa_handler = &timerhandler;
-        sigemptyset(&act.sa_mask);
-        act.sa_flags = SA_SIGINFO;
-        sigaction(SIGALRM, &act, NULL);
-        /*
-         * set up interval timer
-         */
-        times.it_value.tv_sec = 0;	/* wait a bit for system to "stabilize"  */
-        times.it_value.tv_usec = 1;	/* tv_sec or tv_usec cannot be both zero */
-        times.it_interval.tv_sec = (time_t)(SLEEP_TIME / 1000000);
-        times.it_interval.tv_usec = (long)(SLEEP_TIME % 1000000);
-        setitimer(ITIMER_REAL, &times, NULL);
-        
         handler_par.s = s;
         handler_par.achOut = achOut;
         handler_par.len = strlen(achOut) + 1;
         handler_par.n = 0;
         handler_par.stTo = (struct sockaddr *)&stTo;
-        handler_par.stFrom = (struct sockaddr *)&stFrom;
         handler_par.addr_size = addr_size;
         
-        /* now wait for the alarms */
-        sigemptyset(&sigset);
-        for (;;) {
-            sigsuspend(&sigset);
-        }
-        return 0;
-    } else {
-        for (i = 0; i < 10; i++) {
+        // now wait for the alarms
+  
+        for (i=0;i<10;i++) {
             int addr_size = sizeof(struct sockaddr_in);
             
             if (NUM) {
@@ -250,9 +226,9 @@ int main(int argc, char *argv[])
                 achOut[2] = (unsigned char)(i >> 16);
                 achOut[1] = (unsigned char)(i >> 8);
                 achOut[0] = (unsigned char)(i);
-                printf("Send out msg %d to %s:%d\n", i, TEST_ADDR, TEST_PORT);
+                printf("Send out msg %d to %s:%d\n", i+1, TEST_ADDR, TEST_PORT);
             } else {
-                printf("Send out msg %d to %s:%d: %s\n", i, TEST_ADDR, TEST_PORT, achOut);
+                printf("Send out msg %d to %s:%d: %s\n", i+1, TEST_ADDR, TEST_PORT, achOut);
             }
             
             iRet = sendto(s, achOut, (NUM ? 4 : strlen(achOut) + 1), 0, (struct sockaddr *)&stTo, addr_size);
@@ -260,39 +236,53 @@ int main(int argc, char *argv[])
                 printf("sendto() failed.\n");
                 exit(1);
             }
-            iRet = recvfrom(s, handler_par.achIn, BUFSIZE, 0, (struct sockaddr *)&stFrom, &addr_size);
-        }		/* end for(;;) */
+            sleep(0.5);
+        }
+    //////// end for() /////////
+
+    printf("Now receiving from multicast group: %s\n", TEST_ADDR);
+    
+    //time_t exitTime = time(0) + 2;
+    
+    for (int j = 0; j < 10; j++) { // time(0) <= exitTime
+        socklen_t addr_size = sizeof(struct sockaddr_in);
+        static int iCounter = 1;
+        printf("\n %i \n",j+1);
+        /* receive from the multicast address */
+
+        iRet = recvfrom(s, achIn, BUFSIZE, 0, (struct sockaddr *)&stFrom, &addr_size);
+        
+        if (iRet < 0) {
+            continue;
+            printf("recvfrom() failed.\n");
+            exit(1);
+        }
+        printf("\nasdasdasdads\n");
+        if (NUM) {
+            gettimeofday(&tv, NULL);
+            
+            fflush(stdout);
+            if (rcvCountNew > rcvCountOld + 1) {
+                if (rcvCountOld + 1 == rcvCountNew - 1)
+                    printf("****************\nMessage not received: %d\n****************\n", rcvCountOld + 1);
+                else
+                    printf("****************\nMessages not received: %d to %d\n****************\n",
+                           rcvCountOld + 1, rcvCountNew - 1);
+            }
+            if (rcvCountNew == rcvCountOld) {
+                printf("Duplicate message received: %d\n", rcvCountNew);
+            }
+            if (rcvCountNew < rcvCountOld) {
+                printf("****************\nGap detected: %d from %d\n****************\n", rcvCountNew, rcvCountOld);
+            }
+            rcvCountOld = rcvCountNew;
+        } else {
+            printf("Receive msg %d from %s:%d: %s\n",
+                   iCounter, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port), achIn);
+            
+        }
+        iCounter++;
     }
     
-    return (struct sockaddr *)&stFrom;
+    return 0;
 }				/* end main() */
-
-void timerhandler(struct sockaddr *stFrom)
-{
-    int iRet;
-    static int iCounter = 1;
-    
-    if (NUM) {
-        handler_par.achOut = (char *)(&iCounter);
-        handler_par.len = sizeof(iCounter);
-        printf("Sending msg %d, TTL %d, to %s:%d\n", iCounter, TTL_VALUE, TEST_ADDR, TEST_PORT);
-    } else {
-        printf("Sending msg %d, TTL %d, to %s:%d: %s\n", iCounter, TTL_VALUE, TEST_ADDR, TEST_PORT, handler_par.achOut);
-    }
-    iRet = sendto(handler_par.s, handler_par.achOut, handler_par.len, handler_par.n, handler_par.stTo, handler_par.addr_size);
-    if (iRet < 0) {
-        printf("sendto() failed.\n");
-        exit(1);
-    }
-    printf("Receive msg %d from %s:%d: \n", iCounter,TEST_ADDR, TEST_PORT);
-    iCounter++;
-    return;
-}
-
-/**
- * Local Variables:
- *  version-control: t
- *  indent-tabs-mode: t
- *  c-file-style: "linux"
- * End:
- */
