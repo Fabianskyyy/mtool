@@ -31,7 +31,7 @@
 #define LOOPMAX   20
 #define MAXIP     16
 
-char *TEST_ADDR = "224.1.1.1";
+char *TEST_ADDR = "225.3.2.1";
 int TEST_PORT = 4444;
 unsigned long IP[MAXIP];
 int NUM = 0;
