@@ -40,7 +40,7 @@ typedef struct timerhandler_s {
     int len;
     int n;
     struct sockaddr *stTo;
-    int addr_size;
+//    int addr_size;
 } timerhandler_t;
 timerhandler_t handler_par;
 //void timerhandler();
@@ -71,17 +71,17 @@ void printHelp(void)
 
 int main(int argc, char *argv[])
 {
-    struct sockaddr_in stLocal, stTo, stFrom;
+    struct sockaddr_in stLocal, stTo; //,stFrom
     char achOut[BUFSIZE] = "";
-    unsigned char achIn[BUFSIZE];
+//    unsigned char achIn[BUFSIZE];
     int s,i;
     struct ip_mreq stMreq;
     int iTmp, iRet;
     int ii = 1;
-    int addr_size = sizeof(struct sockaddr_in);
-    int rcvCountOld = 0;
-    int rcvCountNew = 1;
-    struct timeval tv;
+//    int addr_size = sizeof(struct sockaddr_in);
+//    int rcvCountOld = 0;
+//    int rcvCountNew = 1;
+//    struct timeval tv;
     //struct itimerval times;
     //sigset_t sigset;
     //struct sigaction act;
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
     stTo.sin_family = AF_INET;
     stTo.sin_addr.s_addr = inet_addr(TEST_ADDR);
     stTo.sin_port = htons(TEST_PORT);
-    printf("Now sending to multicast group: %s\n", TEST_ADDR);
+    printf("\n\nNow sending to multicast group: %s\n\n", TEST_ADDR);
     
         // convert to milliseconds
         // block SIGALRM
@@ -220,11 +220,11 @@ int main(int argc, char *argv[])
     
         handler_par.s = s;
         handler_par.achOut = achOut;
-	handler_par.achIn = achIn;
+	//andler_par.achIn = achIn;
         handler_par.len = strlen(achOut) + 1;
         handler_par.n = 0;
         handler_par.stTo = (struct sockaddr *)&stTo;
-        handler_par.addr_size = addr_size;
+//        handler_par.addr_size = addr_size;
         
         // now wait for the alarms
   
@@ -250,12 +250,12 @@ int main(int argc, char *argv[])
         }
     //////// end for() /////////
 
-    printf("Now receiving from multicast group: %s\n", TEST_ADDR);
+//    printf("Now receiving from multicast group: %s\n", TEST_ADDR);
     
-    time_t exitTime = time(0) + 10;
-    for (j = 0; time(0) <= exitTime; j++) { // time(0) <= exitTime
-        socklen_t addr_size = sizeof(struct sockaddr_in);
-
+//    time_t exitTime = time(0) + 10;
+//    for (j = 0; time(0) <= exitTime; j++) { // time(0) <= exitTime
+//        socklen_t addr_size = sizeof(struct sockaddr_in);
+/*
         iRet = recvfrom(s, achIn, BUFSIZE, 0, (struct sockaddr *)&stFrom, &addr_size);
         
         if (iRet < 0) {
@@ -287,8 +287,10 @@ int main(int argc, char *argv[])
                    j+1, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port), achIn);
             
         }
-	sleep(1);
-    }
+*/	system("mreceive");
+//	printf("\nHALLO\n");
+//	sleep(1);
+//    }
     
     return 0;
 }				/* end main() */
