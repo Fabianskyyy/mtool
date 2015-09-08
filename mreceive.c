@@ -11,17 +11,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#ifndef VERSION
-#define VERSION "Unknown"
-#endif
-
 #define TRUE 1
 #define FALSE 0
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
-#endif
-#ifndef VERSION
-#define VERSION "unknown"
 #endif
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR -1
@@ -209,9 +202,9 @@ int main(int argc, char *argv[])
     
     printf("Now receiving from multicast group: %s\n", TEST_ADDR);
     
-    time_t exitTime = time(0) + 5;
+    time_t exitTime = time(0) + 12;
     
-    for (j = 0; time(0) <= exitTime ; j++) { // time(0) <= exitTime
+    for (j = 0;time(0) <= exitTime ; j++) { // time(0) <= exitTime
         socklen_t addr_size = sizeof(struct sockaddr_in);
         static int iCounter = 1;
         //printf("\n %i \n",j);
@@ -278,7 +271,7 @@ int main(int argc, char *argv[])
     
     printf("\nStart sending from new Source . . .\n\n\n");
     
-    for(z = 0 ; z <= 10 ; z++){
+    for(z = 0 ; z < 10 ; z++){
     handler_par.s = s;
     handler_par.achOut = achIn;
     handler_par.len = strlen(achIn) + 1;
@@ -289,9 +282,9 @@ int main(int argc, char *argv[])
     if (NUM) {
         handler_par.achOut = (char *)(&iCounter);
         handler_par.len = sizeof(iCounter);
-        printf("Sending msg %d, TTL %d, to %s:%d\n", z, TTL_VALUE, TEST_ADDR, TEST_PORT);
+        printf("Sending msg %d, TTL %d, to %s:%d\n", z+1, TTL_VALUE, TEST_ADDR, TEST_PORT);
     } else {
-        printf("Sending msg %d, TTL %d, to %s:%d: %s\n", z, TTL_VALUE, TEST_ADDR, TEST_PORT, handler_par.achOut);
+        printf("Sending msg %d, TTL %d, to %s:%d: %s\n", z+1, TTL_VALUE, TEST_ADDR, TEST_PORT, handler_par.achOut);
     }
     iRet = sendto(handler_par.s, handler_par.achOut, handler_par.len, handler_par.n, handler_par.stTo, handler_par.addr_size);
     if (iRet < 0) {
