@@ -40,10 +40,8 @@ typedef struct timerhandler_s {
     int len;
     int n;
     struct sockaddr *stTo;
-//    int addr_size;
 } timerhandler_t;
 timerhandler_t handler_par;
-//void timerhandler();
 
 void printHelp(void)
 {
@@ -71,20 +69,12 @@ void printHelp(void)
 
 int main(int argc, char *argv[])
 {
-    struct sockaddr_in stLocal, stTo; //,stFrom
+    struct sockaddr_in stLocal, stTo; 
     char achOut[BUFSIZE] = "";
-//    unsigned char achIn[BUFSIZE];
     int s,i;
     struct ip_mreq stMreq;
     int iTmp, iRet;
     int ii = 1;
-//    int addr_size = sizeof(struct sockaddr_in);
-//    int rcvCountOld = 0;
-//    int rcvCountNew = 1;
-//    struct timeval tv;
-    //struct itimerval times;
-    //sigset_t sigset;
-    //struct sigaction act;
     
     if ((argc == 2) && (strcmp(argv[ii], "-v") == 0)) {
         printf("msend version 2.2\n");
@@ -213,18 +203,12 @@ int main(int argc, char *argv[])
     stTo.sin_port = htons(TEST_PORT);
     printf("\n\nNow sending to multicast group: %s\n\n", TEST_ADDR);
     
-        // convert to milliseconds
-        // block SIGALRM
-        //set up handler for SIGALRM
-        //set up interval timer
-    
         handler_par.s = s;
         handler_par.achOut = achOut;
 	//andler_par.achIn = achIn;
         handler_par.len = strlen(achOut) + 1;
         handler_par.n = 0;
         handler_par.stTo = (struct sockaddr *)&stTo;
-//        handler_par.addr_size = addr_size;
         
         // now wait for the alarms
   
@@ -248,49 +232,7 @@ int main(int argc, char *argv[])
             }
             sleep(1);
         }
-    //////// end for() /////////
+ 	system("mreceive");
 
-//    printf("Now receiving from multicast group: %s\n", TEST_ADDR);
-    
-//    time_t exitTime = time(0) + 10;
-//    for (j = 0; time(0) <= exitTime; j++) { // time(0) <= exitTime
-//        socklen_t addr_size = sizeof(struct sockaddr_in);
-/*
-        iRet = recvfrom(s, achIn, BUFSIZE, 0, (struct sockaddr *)&stFrom, &addr_size);
-        
-        if (iRet < 0) {
-            continue;
-            printf("recvfrom() failed.\n");
-            exit(1);
-        }
-        
-        if (NUM) {
-            gettimeofday(&tv, NULL);
-            
-            fflush(stdout);
-            if (rcvCountNew > rcvCountOld + 1) {
-                if (rcvCountOld + 1 == rcvCountNew - 1)
-                    printf("****************\nMessage not received: %d\n****************\n", rcvCountOld + 1);
-                else
-                    printf("****************\nMessages not received: %d to %d\n****************\n",
-                           rcvCountOld + 1, rcvCountNew - 1);
-            }
-            if (rcvCountNew == rcvCountOld) {
-                printf("Duplicate message received: %d\n", rcvCountNew);
-            }
-            if (rcvCountNew < rcvCountOld) {
-                printf("****************\nGap detected: %d from %d\n****************\n", rcvCountNew, rcvCountOld);
-            }
-            rcvCountOld = rcvCountNew;
-        } else {
-            printf("Receive msg %d from %s:%d: %s\n",
-                   j+1, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port), achIn);
-            
-        }
-*/	system("mreceive");
-//	printf("\nHALLO\n");
-//	sleep(1);
-//    }
-    
     return 0;
 }				/* end main() */
