@@ -64,27 +64,15 @@ int main(int argc, char *argv[])
 {
     struct sockaddr_in stLocal, stFrom, stTo;
     char achIn[BUFSIZE];
-    //unsigned char achIIn[BUFSIZE] = "TESTTEXT";
-    //char achOut[BUFSIZE] = "";
     int addr_size = sizeof(struct sockaddr_in);
     int s, i;
     struct ip_mreq stMreq;
     int iTmp, iRet;
     int ipnum = 0;
     int ii;
-    //unsigned int numreceived;
     int rcvCountOld = 0;
     int rcvCountNew = 1;
-    //int starttime;
-    //int curtime;
     struct timeval tv;
-    
-    /*
-     if( argc < 2 ) {
-     printHelp();
-     return 1;
-     }
-     */
     
     ii = 1;
     
@@ -219,18 +207,6 @@ int main(int argc, char *argv[])
         
         if (NUM) {
             gettimeofday(&tv, NULL);
-            
-           /* if (i == 0)
-                starttime = tv.tv_sec * 1000000 + tv.tv_usec;
-            else if
-                curtime = tv.tv_sec * 1000000 + tv.tv_usec - starttime
-            numreceived =
-            (unsigned int)achIn[0] + ((unsigned int)(achIn[1]) << 8) + ((unsigned int)(achIn[2]) << 16) +
-            ((unsigned int)(achIn[3]) >> 24);
-            fprintf(stdout, "%5d\t%s:%5d\t%d.%03d\t%5d\n", iCounter, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port),
-                    curtime / 1000000, (curtime % 1000000) / 1000, numreceived);
-            fflush(stdout);
-            rcvCountNew = numreceived;*/
             if (rcvCountNew > rcvCountOld + 1) {
                 if (rcvCountOld + 1 == rcvCountNew - 1)
                     printf("****************\nMessage not received: %d\n****************\n", rcvCountOld + 1);
@@ -248,15 +224,6 @@ int main(int argc, char *argv[])
         } else {
             printf("Receive msg %d from %s:%d: %s\n",
                    iCounter, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port), achIn);
-            
-            //system("echo 'Text' | nc 'ip' 'port' 'UDP'");
-            //sprintf(command, "echo '%s' | nc -l %s -p %d", achIn, inet_ntoa(stFrom.sin_addr), ntohs(stFrom.sin_port));
-            //system(command);
-            
-            // -l & -p -> depends on version of netcat
-            //after executing system(), process stops working
-            // (UNKNOWN) [192.168.10.2] 5555 (?) : Connection Refused
-            // Mit SOCK_DGRAM --> invalid Port (viereck mit 4 bits)
         }
         iCounter++;
     }
